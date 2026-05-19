@@ -1,312 +1,160 @@
 
+            
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const scoreText = document.getElementById("score");
-const gameOverBox = document.getElementById("gameOver");
+let score = 0;
+let level = 1;
+let speedBoost = 1;
+let gameRunning = true;
 
-const gridSize = 25;
-const tileCount = canvas.width / gridSize;
+// Road animation
+let roadY = 0;
 
-let snake;
-let velocityX;
-let velocityY;
-let food;
-let bomb;
+// Player
+let player = {
+  x: 250,
+  y: 500,
+  size: 30,
+  speed: 6
+};
 
-let score;
-let gameRunning = false;
-let gameStarted = false;
-let gameSpeed = 120;
+// Enemies
+let enemies = [];
 
-const eatSound = new Audio(
-"https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3"
-);
-
-const gameOverSound = new Audio(
-"https://assets.mixkit.co/sfx/preview/mixkit-player-losing-or-failing-2042.mp3"
-);
-
-function initializeGame(){
-
-    snake = [
-        {x:10, y:10}
-    ];
-
-    velocityX = 0;
-    velocityY = 0;
-
-    food = randomPosition();
-    bomb = randomPosition();
-
-    score = 0;
-    scoreText.innerText = score;
-
-    gameRunning = true;
+// Spawn enemy
+function spawnEnemy() {
+  enemies.push({
+    x: Math.random() * 450,
+    y: 0,
+    size: Math.random() * 25 + 15,
+    speed: (Math.random() * 2 + 1) * speedBoost
+  });
 }
 
-function randomPosition(){
+// Difficulty increase
+setInterval(() => {
+  if (!gameRunning) return;
+  spawnEnemy();
+  speedBoost += 0.03;
+}, 1000);
 
-    return {
-        x: Math.floor(Math.random() * tileCount),
-        y: Math.floor(Math.random() * tileCount)
-    };
+// Level system
+function updateLevel() {
+  level = Math.floor(score / 100) + 1;
+  document.getElementById("level").innerText = level;
 }
 
-function startGame(){
+// Controls (keyboard)
+document.addEventListener("keydown", (e) => {
+  if (!gameRunning) return;
 
-    if(gameStarted) return;
+  if (e.key === "ArrowLeft") player.x -= player.speed;
+  if (e.key === "ArrowRight") player.x += player.speed;
+  if (e.key === "ArrowUp") player.y -= player.speed;
+  if (e.key === "ArrowDown") player.y += player.speed;
+});
 
-    gameStarted = true;
+// Mobile buttons
+function move(dir) {
+  if (!gameRunning) return;
 
-    initializeGame();
-
-    drawGame();
+  if (dir === "left") player.x -= player.speed * 10;
+  if (dir === "right") player.x += player.speed * 10;
+  if (dir === "up") player.y -= player.speed * 10;
+  if (dir === "down") player.y += player.speed * 10;
 }
 
-function drawGame(){
+// Touch swipe control
+let startX = 0;
 
-    if(!gameRunning) return;
+canvas.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+});
 
-    moveSnake();
+canvas.addEventListener("touchmove", (e) => {
+  let diff = e.touches[0].clientX - startX;
+  player.x += diff * 0.05;
+});
 
-    if(checkCollision()){
-
-        gameOver();
-
-        return;
-    }
-
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    drawGrid();
-    drawFood();
-    drawBomb();
-    drawSnake();
-
-    setTimeout(drawGame, gameSpeed);
+// Collision
+function collide(a, b) {
+  return (
+    a.x < b.x + b.size &&
+    a.x + a.size > b.x &&
+    a.y < b.y + b.size &&
+    a.y + a.size > b.y
+  );
 }
 
-function moveSnake(){
-
-    const head = {
-        x: snake[0].x + velocityX,
-        y: snake[0].y + velocityY
-    };
-
-    snake.unshift(head);
-
-    // FOOD
-    if(head.x === food.x && head.y === food.y){
-
-        eatSound.play();
-
-        score++;
-        scoreText.innerText = score;
-
-        food = randomPosition();
-
-        // SPEED UP
-        if(gameSpeed > 50){
-            gameSpeed -= 3;
-        }
-
-    } else {
-
-        snake.pop();
-    }
+// Game over
+function endGame() {
+  gameRunning = false;
+  document.getElementById("gameOver").style.display = "block";
 }
 
-function drawSnake(){
-
-    snake.forEach((part, index) => {
-
-        if(index === 0){
-
-            ctx.fillStyle = "#00ff88";
-
-        } else {
-
-            ctx.fillStyle = "#00cc66";
-        }
-
-        ctx.beginPath();
-
-        ctx.roundRect(
-            part.x * gridSize,
-            part.y * gridSize,
-            gridSize - 2,
-            gridSize - 2,
-            8
-        );
-
-        ctx.fill();
-    });
+// Restart
+function restart() {
+  location.reload();
 }
 
-function drawFood(){
+// Road drawing
+function drawRoad() {
+  roadY += 5;
+  if (roadY > canvas.height) roadY = 0;
+
+  ctx.fillStyle = "#222";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#555";
+  ctx.lineWidth = 4;
+
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    ctx.moveTo(250, i * 60 + roadY);
+    ctx.lineTo(250, i * 60 + 30 + roadY);
+    ctx.stroke();
+  }
+}
+
+// Game loop
+function update() {
+  if (!gameRunning) return;
+
+  drawRoad();
+
+  // Player
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  // Enemies
+  for (let i = 0; i < enemies.length; i++) {
+    let enemy = enemies[i];
+    enemy.y += enemy.speed;
 
     ctx.fillStyle = "red";
+    ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
 
-    ctx.beginPath();
-
-    ctx.arc(
-        food.x * gridSize + 12,
-        food.y * gridSize + 12,
-        10,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-}
-
-function drawBomb(){
-
-    ctx.fillStyle = "black";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        bomb.x * gridSize + 12,
-        bomb.y * gridSize + 12,
-        11,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.fillStyle = "orange";
-
-    ctx.font = "18px Arial";
-
-    ctx.fillText(
-        "💣",
-        bomb.x * gridSize + 1,
-        bomb.y * gridSize + 20
-    );
-}
-
-function drawGrid(){
-
-    ctx.strokeStyle = "#222";
-
-    for(let i = 0; i < tileCount; i++){
-
-        ctx.beginPath();
-        ctx.moveTo(i * gridSize, 0);
-        ctx.lineTo(i * gridSize, canvas.height);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(0, i * gridSize);
-        ctx.lineTo(canvas.width, i * gridSize);
-        ctx.stroke();
-    }
-}
-
-function checkCollision(){
-
-    const head = snake[0];
-
-    // WALL
-    if(
-        head.x < 0 ||
-        head.y < 0 ||
-        head.x >= tileCount ||
-        head.y >= tileCount
-    ){
-        return true;
+    if (collide(player, enemy)) {
+      if (player.size >= enemy.size) {
+        player.size += 1.5;
+        score += 10;
+        document.getElementById("score").innerText = score;
+        updateLevel();
+        enemies.splice(i, 1);
+      } else {
+        endGame();
+      }
     }
 
-    // SELF
-    for(let i = 1; i < snake.length; i++){
-
-        if(
-            head.x === snake[i].x &&
-            head.y === snake[i].y
-        ){
-            return true;
-        }
+    if (enemy.y > canvas.height) {
+      enemies.splice(i, 1);
     }
+  }
 
-    // BOMB
-    if(
-        head.x === bomb.x &&
-        head.y === bomb.y
-    ){
-        return true;
-    }
-
-    return false;
+  requestAnimationFrame(update);
 }
 
-function gameOver(){
-
-    gameRunning = false;
-
-    gameOverSound.play();
-
-    gameOverBox.classList.remove("hidden");
-}
-
-function restartGame(){
-
-    gameStarted = false;
-
-    gameSpeed = 120;
-
-    gameOverBox.classList.add("hidden");
-
-    startGame();
-}
-
-document.addEventListener("keydown", e => {
-
-    if(!gameRunning) return;
-
-    switch(e.key){
-
-        case "ArrowUp":
-
-            if(velocityY !== 1){
-
-                velocityX = 0;
-                velocityY = -1;
-            }
-
-            break;
-
-        case "ArrowDown":
-
-            if(velocityY !== -1){
-
-                velocityX = 0;
-                velocityY = 1;
-            }
-
-            break;
-
-        case "ArrowLeft":
-
-            if(velocityX !== 1){
-
-                velocityX = -1;
-                velocityY = 0;
-            }
-
-            break;
-
-        case "ArrowRight":
-
-            if(velocityX !== -1){
-
-                velocityX = 1;
-                velocityY = 0;
-            }
-
-            break;
-    }
-});
+update();
+            
+    
