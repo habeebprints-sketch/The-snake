@@ -1,43 +1,34 @@
-hea
-<
-  
-<title>Pro Snake Game</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Car Eat Car Pro</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="game-container">
+<h1>🚗 Car Eat Car PRO</h1>
 
-<h1>🐍 PRO SNAKE GAME</h1>
-
-<div class="score-box">
-Score: <span id="score">0</span>
+<div class="hud">
+  <p>Score: <span id="score">0</span></p>
+  <p>Level: <span id="level">1</span></p>
 </div>
 
-<canvas id="game" width="500" height="500"></canvas>
+<canvas id="game" width="500" height="600"></canvas>
+
+<div id="gameOver">
+  <h2>💥 Game Over</h2>
+  <button onclick="restart()">Restart</button>
+</div>
 
 <div class="controls">
-
-<button onclick="startGame()">Start Game</button>
-
-<button onclick="restartGame()">Restart</button>
-
+  <button onclick="move('left')">⬅️</button>
+  <button onclick="move('up')">⬆️</button>
+  <button onclick="move('down')">⬇️</button>
+  <button onclick="move('right')">➡️</button>
 </div>
 
-<div id="gameOver" class="hidden">
-
-<h2>💀 GAME OVER</h2>
-
-<button onclick="restartGame()">
-Play Again
-</button>
-
-</div>
-
-</div>
-
-<script src="script.js"></script>
-
+<script src="game.js"></script>
 </body>
 </html>
